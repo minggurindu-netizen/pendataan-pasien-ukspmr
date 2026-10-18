@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Pendataan UKS - SMP Islam Ar-Ridho</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f0fdf4; } /* Light green background */
+        
+        /* Custom scrollbar for table */
+        .table-container::-webkit-scrollbar { width: 8px; height: 8px; }
+        .table-container::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        .table-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .table-container::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Toast Animation */
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .toast-enter { animation: slideIn 0.3s ease-out forwards; }
+        
+        /* Modal Animation */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .modal-overlay { animation: fadeIn 0.2s ease-out forwards; }
+        .modal-content { animation: slideUp 0.3s ease-out forwards; }
+    </style>
+</head>
+<body class="text-gray-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Header & Navigation -->
+    <header class="bg-emerald-700 text-white shadow-lg sticky top-0 z-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <!-- Simple Cross Icon for UKS -->
+                <div class="bg-white p-2.5 rounded-2xl shadow-inner text-emerald-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl md:text-2xl font-black leading-tight tracking-tight">Portal UKS</h1>
+                    <p class="text-emerald-200 text-sm font-medium">SMP Islam Ar-Ridho Citeureup</p>
+                </div>
+            </div>
+            <div id="connection-status" class="text-xs font-bold bg-emerald-800/80 px-4 py-1.5 rounded-full flex items-center gap-2 border border-emerald-600 self-start sm:self-auto">
+                <div class="w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse" id="status-dot"></div>
+                <span id="status-text" class="tracking-wide uppercase">Menghubungkan...</span>
+            </div>
+        </div>
+        
+        <!-- Tabs -->
+        <div class="bg-emerald-800 border-t border-emerald-600/50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex gap-1 pt-2">
+                <button id="tab-beranda" class="px-6 py-3 text-sm sm:text-base font-bold text-white border-b-4 border-white bg-emerald-700/50 rounded-t-xl transition-colors">Dashboard Publik</button>
+                <button id="tab-admin" class="px-6 py-3 text-sm sm:text-base font-bold text-emerald-200 border-b-4 border-transparent hover:text-white hover:bg-emerald-700/30 rounded-t-xl transition-colors">Menu Admin (Input)</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+        
+        <!-- ================= BERANDA SECTION ================= -->
+        <div id="beranda-section" class="space-y-8 animate-[fadeIn_0.3s_ease-out]">
+            
+            <!-- Top Stats Dashboard -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-3xl shadow-sm border border-emerald-100 flex flex-col items-center justify-center text-center">
+                    <span class="text-emerald-500 text-4xl font-black mb-1" id="stat-total-siswa">0</span>
+                    <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">Total Siswa</span>
+                </div>
+                <div class="bg-white p-5 rounded-3xl shadow-sm border border-emerald-100 flex flex-col items-center justify-center text-center relative overflow-hidden">
+                    <div class="absolute -right-4 -bottom-4 opacity-5 text-blue-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                    </div>
+                    <span class="text-blue-500 text-4xl font-black mb-1 relative z-10" id="stat-total-l">0</span>
+                    <span class="text-xs font-bold text-gray-400 uppercase tracking-widest relative z-10">Laki-laki</span>
+                </div>
+                <div class="bg-white p-5 rounded-3xl shadow-sm border border-emerald-100 flex flex-col items-center justify-center text-center relative overflow-hidden">
+                    <div class="absolute -right-4 -bottom-4 opacity-5 text-pink-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                    </div>
+                    <span class="text-pink-500 text-4xl font-black mb-1 relative z-10" id="stat-total-p">0</span>
+                    <span class="text-xs font-bold text-gray-400 uppercase tracking-widest relative z-10">Perempuan</span>
+                </div>
+                <div class="bg-gradient-to-br from-emerald-500 to-emerald-700 p-5 rounded-3xl shadow-lg shadow-emerald-200 border border-emerald-600 flex flex-col items-center justify-center text-center text-white transform hover:-translate-y-1 transition-transform">
+                    <span class="text-5xl font-black mb-1 drop-shadow-md" id="stat-pasien-hari-ini">0</span>
+                    <span class="text-xs font-bold text-emerald-100 uppercase tracking-widest">Pasien Hari Ini</span>
+                </div>
+            </div>
+
+            <!-- Class Statistics Grid -->
+            <div class="bg-white rounded-3xl shadow-sm border border-emerald-100 p-6">
+                <div class="flex items-center gap-3 mb-5 border-b border-gray-100 pb-4">
+                    <div class="p-2 bg-emerald-50 rounded-lg text-emerald-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                    </div>
+                    <h2 class="text-lg font-bold text-gray-800">Sebaran Data Siswa Per Kelas</h2>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4" id="class-stats-grid">
+                    <!-- Class Cards Injected by JS -->
+                </div>
+            </div>
+
+            <!-- Public Daily Table -->
+            <div class="bg-white rounded-3xl shadow-sm border border-emerald-100 overflow-hidden flex flex-col">
+                <div class="p-6 border-b border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            Daftar Kunjungan UKS
+                        </h2>
+                        <p class="text-sm text-gray-500 mt-1">Data hanya-baca. Pilih tanggal untuk melihat riwayat hari tertentu.</p>
+                    </div>
+                    <div class="flex items-center gap-3 bg-gray-50 p-2 rounded-xl border border-gray-100 w-full md:w-auto">
+                        <label for="beranda-date" class="text-sm font-bold text-gray-600 pl-2">Tanggal:</label>
+                        <input type="date" id="beranda-date" class="flex-grow md:w-auto rounded-lg border-gray-300 border px-3 py-2 text-sm focus:ring-emerald-500 focus:border-emerald-500 font-bold text-emerald-900 bg-white shadow-sm">
+                    </div>
+                </div>
+                
+                <div class="flex-grow p-0 table-container overflow-x-auto relative min-h-[300px]">
+                    <table class="min-w-full text-left text-sm whitespace-nowrap">
+                        <thead class="uppercase tracking-wider border-b-2 border-emerald-500 bg-gray-50 sticky top-0 z-10 text-gray-500 font-black text-xs">
+                            <tr>
+                                <th scope="col" class="px-6 py-4">No</th>
+                                <th scope="col" class="px-6 py-4">Waktu</th>
+                                <th scope="col" class="px-6 py-4">Nama Siswa</th>
+                                <th scope="col" class="px-6 py-4 text-center">L/P</th>
+                                <th scope="col" class="px-6 py-4 text-center">Kelas</th>
+                                <th scope="col" class="px-6 py-4">Keluhan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="public-table-body" class="divide-y divide-gray-100 bg-white text-gray-700">
+                            <!-- Populated by JS -->
+                            <tr><td colspan="6" class="px-6 py-12 text-center text-gray-400 font-medium">Memuat data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= ADMIN SECTION (Hidden default) ================= -->
+        <div id="admin-section" class="hidden flex-col lg:flex-row gap-8 animate-[fadeIn_0.3s_ease-out]">
+            
+            <!-- Left Column: Form -->
+            <div class="lg:w-1/3">
+                <div class="bg-white rounded-3xl shadow-sm border border-emerald-100 p-6 sticky top-24">
+                    <div class="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
+                        <div class="p-2 bg-emerald-100 rounded-lg text-emerald-700">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                            </svg>
+                        </div>
+                        <h2 class="text-lg font-bold text-gray-900">Input Data Pasien</h2>
+                    </div>
+                    
+                    <form id="uks-form" class="space-y-4">
+                        <!-- Global Date Picker -->
+                        <div>
+                            <label for="tanggal" class="block text-sm font-bold text-gray-700 mb-1">Tanggal Laporan (Dipertahankan)</label>
+                            <input type="date" id="tanggal" required
+                                class="w-full rounded-xl border-gray-300 border-2 px-4 py-3 focus:border-emerald-500 focus:ring-emerald-500 bg-emerald-50 text-emerald-900 font-bold transition-colors">
+                        </div>
+
+                        <hr class="border-gray-100 my-4">
+
+                        <!-- Class & Student Selection -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="pilih-kelas" class="block text-sm font-bold text-gray-700 mb-1">Pilih Kelas</label>
+                                <select id="pilih-kelas" required
+                                    class="w-full rounded-xl border-gray-300 border-2 px-4 py-3 focus:border-emerald-500 focus:ring-emerald-500 transition-colors bg-white font-medium">
+                                    <option value="" disabled selected>-- Kelas --</option>
+                                    <!-- Options populated by JS -->
+                                </select>
+                            </div>
+                            <div>
+                                <label for="nama" class="block text-sm font-bold text-gray-700 mb-1">Nama Siswa</label>
+                                <select id="nama" required disabled
+                                    class="w-full rounded-xl border-gray-300 border-2 px-4 py-3 focus:border-emerald-500 focus:ring-emerald-500 transition-colors bg-white disabled:bg-gray-100 disabled:text-gray-400 font-medium">
+                                    <option value="" disabled selected>Pilih Kelas Dulu</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Auto-filled Info -->
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">NIS</label>
+                                <input type="text" id="nis" readonly tabindex="-1" placeholder="-" class="w-full bg-transparent border-none p-0 text-gray-800 font-semibold focus:ring-0 text-sm">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">NISN</label>
+                                <input type="text" id="nisn" readonly tabindex="-1" placeholder="-" class="w-full bg-transparent border-none p-0 text-gray-800 font-semibold focus:ring-0 text-sm">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">L/P</label>
+                                <input type="text" id="jk" readonly tabindex="-1" placeholder="-" class="w-full bg-transparent border-none p-0 text-gray-800 font-semibold focus:ring-0 text-sm">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Kelas</label>
+                                <input type="text" id="kelas" readonly tabindex="-1" placeholder="-" class="w-full bg-transparent border-none p-0 text-gray-800 font-semibold focus:ring-0 text-sm">
+                            </div>
+                        </div>
+
+                        <!-- Keluhan -->
+                        <div>
+                            <label for="keluhan" class="block text-sm font-bold text-gray-700 mb-1">Keluhan / Tindakan</label>
+                            <textarea id="keluhan" required rows="3" placeholder="Contoh: Pusing, istirahat 30 menit..."
+                                class="w-full rounded-xl border-gray-300 border-2 px-4 py-3 focus:border-emerald-500 focus:ring-emerald-500 transition-colors font-medium"></textarea>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" id="submit-btn" disabled
+                            class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-md transition-all transform hover:-translate-y-0.5 flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
+                            </svg>
+                            Simpan Laporan
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Right Column: Table -->
+            <div class="lg:w-2/3">
+                <div class="bg-white rounded-3xl shadow-sm border border-emerald-100 overflow-hidden flex flex-col h-full">
+                    <div class="p-6 border-b border-gray-100 bg-gray-50/50">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+                            <div>
+                                <h2 class="text-lg font-bold text-gray-900">Database Rekapitulasi</h2>
+                                <p class="text-sm font-medium text-emerald-700" id="table-subtitle">Memuat data...</p>
+                            </div>
+                            <div class="bg-emerald-100 text-emerald-800 px-4 py-2 rounded-xl text-sm font-black inline-flex items-center gap-2 border border-emerald-200 shadow-sm">
+                                Total Pasien Terfilter: <span id="total-count" class="text-lg">0</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Filter & Export Controls -->
+                        <div class="flex flex-wrap gap-3 items-center justify-between bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
+                            <div class="flex flex-wrap gap-3 items-center w-full sm:w-auto">
+                                <div class="bg-gray-50 p-1.5 rounded-lg border border-gray-200 flex items-center">
+                                    <select id="view-mode" class="bg-transparent border-none text-sm font-bold text-gray-700 focus:ring-0 py-1">
+                                        <option value="harian">Filter Harian</option>
+                                        <option value="bulanan">Filter Bulanan</option>
+                                    </select>
+                                </div>
+                                <input type="date" id="filter-date" class="rounded-lg border-gray-300 border-2 px-3 py-1.5 text-sm font-bold text-emerald-900 focus:border-emerald-500 focus:ring-0">
+                                <input type="month" id="filter-month" class="hidden rounded-lg border-gray-300 border-2 px-3 py-1.5 text-sm font-bold text-emerald-900 focus:border-emerald-500 focus:ring-0">
+                                
+                                <select id="filter-kelas" class="rounded-lg border-gray-300 border-2 px-3 py-1.5 text-sm font-bold text-gray-700 focus:border-emerald-500 focus:ring-0">
+                                    <option value="all">Semua Kelas</option>
+                                </select>
+                            </div>
+                            <button id="btn-export" onclick="exportToCSV()" class="w-full sm:w-auto bg-gray-800 hover:bg-gray-900 text-white text-sm font-bold py-2.5 px-5 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                Download Excel
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="flex-grow p-0 table-container overflow-x-auto relative min-h-[300px]">
+                        <table class="min-w-full text-left text-sm whitespace-nowrap">
+                            <thead class="uppercase tracking-wider border-b-2 border-emerald-500 bg-white sticky top-0 z-10 text-gray-500 font-black text-xs">
+                                <tr>
+                                    <th scope="col" class="px-6 py-4">No</th>
+                                    <th scope="col" class="px-6 py-4">Waktu</th>
+                                    <th scope="col" class="px-6 py-4">Nama Siswa</th>
+                                    <th scope="col" class="px-6 py-4 text-center">Kelas</th>
+                                    <th scope="col" class="px-6 py-4">Keluhan</th>
+                                    <th scope="col" class="px-6 py-4 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body" class="divide-y divide-gray-100 bg-white text-gray-700 font-medium">
+                                <tr>
+                                    <td colspan="6" class="px-6 py-12 text-center text-gray-400">Memuat data rekapitulasi...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modals & Toasts -->
+    <div id="toast-container" class="fixed top-5 right-5 sm:bottom-5 sm:top-auto flex flex-col gap-2 z-[9999]"></div>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="hidden fixed inset-0 bg-gray-900/70 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm modal-overlay">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 modal-content text-center border-t-8 border-emerald-600">
+            <div class="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-5 rotate-12 shadow-sm border border-emerald-100">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 -rotate-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+            </div>
+            <h3 class="text-2xl font-black text-gray-900 mb-2">Otorisasi Admin</h3>
+            <p class="text-sm text-gray-500 mb-6 font-medium">Masukkan PIN rahasia untuk mengakses fitur Input & Manajemen Data.</p>
+            <form id="login-form" class="space-y-5">
+                <div>
+                    <input type="password" id="pin-input" placeholder="PIN Admin" autocomplete="off"
+                        class="w-full text-center tracking-[0.5em] text-2xl font-black rounded-xl border-gray-300 border-2 px-4 py-3 focus:border-emerald-500 focus:ring-emerald-500 focus:outline-none transition-colors bg-gray-50">
+                    <p id="login-error" class="text-red-500 text-sm font-bold mt-2 hidden animate-bounce">PIN Salah! Silakan coba lagi.</p>
+                </div>
+                <div class="flex gap-3">
+                    <button type="button" onclick="closeLogin()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3.5 rounded-xl transition-colors">Kembali</button>
+                    <button type="submit" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl shadow-md transition-all">Buka Akses</button>
+                </div>
+            </form>
+            <p class="text-xs text-gray-400 mt-6 mt-4">TIPS: Gunakan PIN "123456" untuk demo</p>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div id="history-modal" class="hidden fixed inset-0 bg-gray-900/60 z-[1000] flex items-center justify-center p-4 backdrop-blur-sm modal-overlay">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col modal-content overflow-hidden border border-gray-100">
+            <div class="p-6 border-b border-gray-100 flex justify-between items-start bg-emerald-50/30">
+                <div>
+                    <h3 class="text-xs font-black tracking-widest uppercase text-emerald-600 flex items-center gap-2 mb-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        Rekam Medis UKS
+                    </h3>
+                    <h4 class="text-2xl font-black text-gray-900 mb-1" id="history-nama">Nama Siswa</h4>
+                    <p class="text-sm font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-md inline-block" id="history-info">NISN: - | Kelas: -</p>
+                </div>
+                <button onclick="closeHistoryModal()" class="text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors p-2.5 bg-white rounded-full shadow-sm border border-gray-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="p-0 overflow-y-auto flex-grow bg-white">
+                <div class="table-container">
+                    <table class="min-w-full text-left text-sm whitespace-nowrap">
+                        <thead class="bg-gray-50 sticky top-0 z-10 text-gray-500 font-bold uppercase text-xs tracking-wider border-b">
+                            <tr>
+                                <th scope="col" class="px-6 py-4">Tanggal Sakit</th>
+                                <th scope="col" class="px-6 py-4">Waktu Lapor</th>
+                                <th scope="col" class="px-6 py-4 w-full">Keluhan & Tindakan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body" class="divide-y divide-gray-100 bg-white text-gray-700 font-medium">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK Imports -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // ============================================================================
+        // 1. DATA SISWA MASTER
+        // ============================================================================
+        // 1. DATA SISWA (COMPRESSED)
+        // Format: Name,NIS,NISN,JK,Class|Name,NIS,NISN,JK,Class|...
+        // ============================================================================
+        const compressedStudentData = "ABINAYA AQILA BADRA,262707001,3137029146,P,7.1|AHMAD FAUZI NUGROHO,262707002,3138961339,L,7.1|ALESHA WINIA SAPUTRA,262707003,3141963645,P,7.1|ALFA NIZAR IQBAL,262707004,3142127373,L,7.1|ALIFIANDRA BILFAQIH AZKA,262707005,3135348697,L,7.1|ALISHA SAFIA,262707006,0137170612,P,7.1|ANANDA RISKY PRATAMA,262707007,3148553322,L,7.1|ASHIFA CAHAYA RAMADHANI,262707008,0131584532,P,7.1|AZMI DANIS PRATISTA,262707009,3135546566,L,7.1|DAFANIA AQUILA PUTRI,262707010,0146385536,P,7.1|FADIL WAFIY RACHMANDA,262707011,3133904953,L,7.1|FARHAN AL-RAJABI,262707012,0145564233,L,7.1|FAUZIAH RAHMADANI,262707013,0144593901,P,7.1|HAFIZ MAULANA,262707014,3141587723,L,7.1|HANAN KEYCHILA AZALEA,262707015,0146603928,P,7.1|IBRAHIM ISSAMAD,262707016,0138516894,L,7.1|JEFRISYA AZZAHRA SUHERMAN,262707017,3130709307,P,7.1|KHAYLA NUR AZZAHRA MARYASADIE,262707018,313590002,P,7.1|MAULANA ANAQI ATAQILAH,262707019,3145769774,L,7.1|MUHAMAD ALWI AL FARIJI,262707020,3133123415,L,7.1|MUHAMAD SYAFIQ ALWI,262707021,0149093920,L,7.1|MUHAMMAD AFDHAL,262707022,3147973789,L,7.1|MUHAMMAD ALFAREZY SETIAWAN,262707023,3139610935,L,7.1|MUHAMMAD AZKA REWA AL BUKHORI,262707024,3132075322,L,7.1|MUHAMMAD FATHAN ALZAM,262707025,0141009198,L,7.1|MUHAMMAD NASRI ALHABSYI,262707026,3141805180,L,7.1|MUHAMMAD NAZRIL AL'FAZIRI,262707027,3135983210,L,7.1|MUHAMMAD RAKHA ATHALLA,262707028,3131391054,L,7.1|MUHAMMAD RIYADU SOLIHIN,262707029,3140721179,L,7.1|MUHAMMAD SAKHA ADIΝΑΤΑ,262707030,3144207134,L,7.1|MUHAMMAD YUSUF HABIBI,262707031,0143670620,L,7.1|NABILA ASYAHWA,262707032,0133930964,P,7.1|NAZWA ANGGRAINI MULIA,262707033,3130623455,P,7.1|PUTRI MAS SIARA,262707034,3130585522,P,7.1|RAISYYA LEVIANA DEVI,262707035,0136571847,P,7.1|REZA ABDUL MALIK,262707036,0136885262,L,7.1|RIFA NURUL AMALIAH,262707037,0143268774,P,7.1|RIVALDI ARAFA NAZUHA,262707038,3136176415,L,7.1|RIZAL RAMADHAN,262707039,0135848475,L,7.1|SHAFANA KIRAN AZZYKRA,262707040,3133630342,P,7.1|SYAHQILA LINGGA AYUDYA,262707041,3136075998,P,7.1|ZAHRA ALYA NABILA,262707042,3131632392,P,7.1|ZULFA AZZAHRA,262707171,3135601963,P,7.1|ADHELIA MAHESTRI,262707043,0142332411,P,7.2|AHMAD NAIZUL ANWAR,262707044,0134373340,L,7.2|ALFADILA YUMNA ZAIN,262707045,0141066286,L,7.2|ALFAHIRA FAUZIA WIJAYA,262707046,3131062473,P,7.2|ALKHALIFI ZIKRI SAVA FIRMANSYAH,262707047,0131506052,L,7.2|ALLESHA ANDREANA DEWI,262707048,3142208501,P,7.2|ARIS MUNANDAR,262707049,0133899787,L,7.2|ATIKAH AZAHRA,262707050,3149588940,P,7.2|DAFFA ANJI RIZQULLAH,262707051,3135501238,L,7.2|DZAKIRA TALITA ZAHRA,262707052,0136898184,P,7.2|FAHRI AL FARIZI DWI GUSTI,262707053,3132202484,L,7.2|FIQI FADILAH,262707054,3149367303,L,7.2|GHAZIYA HAFIZA SAKHI,262707055,3145805111,P,7.2|HASBY YAQDAN AL GHIFARI,262707056,0141829547,L,7.2|ISMI NURAFIFAH,262707057,3134566954,P,7.2|JERICHO FITRIANA,262707058,0139244241,L,7.2|KEISHA PUTRI AZZAHRA,262707059,3131493813,P,7.2|KHUMAIRAH NUR LATIFAH,262707060,3147745584,P,7.2|MELZHA SUGIANI NUR'AINI,262707061,0142309141,P,7.2|MOOSA GAOZHAN AL-FATHI,262707062,3127932358,L,7.2|MUHAMAD ANGGI RAMADAN,262707063,0136313376,L,7.2|MUHAMAD VIRZHA,262707064,3148295693,L,7.2|MUHAMMAD ARDAN ALFARIZI,262707065,0131342395,L,7.2|MUHAMMAD AZKI AL KHALIFI,262707066,3148897243,L,7.2|MUHAMMAD ILYAS ALGHIFARI,262707067,3135583146,L,7.2|MUHAMMAD NATHAN ABINAYA,262707068,3139122060,L,7.2|MUHAMMAD NIZAR RIZKY,262707069,3147994269,L,7.2|MUHAMMAD RAMDANI ADILUDIN,262707070,3145813899,L,7.2|MUHAMMAD RIZKY MAULANA,262707071,3132468424,L,7.2|MUHAMMAD SATRIA PUTRA PRATAMA,262707072,3134736202,L,7.2|NADA ZAHIRAH ZALFA,262707073,0131096004,P,7.2|NAZWA KHAIRAWILDA,262707074,3135718622,P,7.2|RAFA KHAIRUL ANAM,262707075,0146498182,L,7.2|RAFANDA ANNISA,262707076,3148207687,P,7.2|RATU ASKANA SAKHI,262707077,01041481145,P,7.2|REZA ALVIN PRASETYO,262707078,3145836103,L,7.2|REZKY ANDIKHA PRATAΜΑ,262707079,0133002818,L,7.2|SAFITRI RAMADANI,262707080,0135155885,P,7.2|SITI MARISKA,262707081,3140360356,P,7.2|SYAKILA NURFATHIYYA,262707082,3141028169,P,7.2|VERGIO FIRDA NURSALAM,262707083,3146695515,L,7.2|YUMNA AFIKA SEPTIANY,262707084,0135980275,P,7.2|ZAHRA AULYA PUTRI,262707085,3135030883,P,7.2|ADREENA ZIA ALFARIZKI,262707086,3133238247,P,7.3|ALBY AINNUR ZAIDAN,262707087,0149554115,L,7.3|ALIF ALFATIH SANDI HERNAWAN,262707088,3133211044,L,7.3|ALIFA SALSABILA,262707089,0132238101,P,7.3|ALMEIRA RINJANI FAUZIAH,262707090,0142720913,P,7.3|ALVIN NUR FAUZAN,262707091,3147541827,L,7.3|AUREL KHAIRUL NIZZAM,262707092,0138187927,L,7.3|AZZAHRA AURORA PUTRI PRIADI,262707093,3143967310,P,7.3|DANISH RADITHYA FAEYΥΖΑ,262707094,3142166926,L,7.3|FAHRI EL BAKIF,262707095,3142292198,L,7.3|FAKHIRA FITRI RAMADHANI,262707096,3145983952,P,7.3|GALANG AZHAR RAMADHAN,262707097,3137281538,L,7.3|GITHA AULIA HAFSARI,262707098,3130999075,P,7.3|IBNU AJHAR DESTRIAWAN,262707099,3135175587,L,7.3|ISTIQOMAH HAERUN NISA,262707100,3143709703,P,7.3|KEVAN FAEΥΖΑ ADINATA,262707101,3141892324,L,7.3|KHANZA APRILIA AZKIA,262707102,0148649143,P,7.3|LATIFA AYOE MUGHNII,262707103,3131596839,P,7.3|MUHAMAD ABDUL LATIF,262707104,3140585915,L,7.3|MUHAMAD BOBBY GAISAN GAFFAR,262707105,3134700518,L,7.3|MUHAMMAD AAKIF NURFADILAH,262707106,0142791095,L,7.3|MUHAMMAD AZAM ALGIFARY,262707107,3139121955,L,7.3|MUHAMMAD DAFFA RAMADHAN,262707108,3134511738,L,7.3|MUHAMMAD IZWAN ALLUTFI,262707109,3134269909,L,7.3|MUHAMMAD NAUFAL ABRISAM,262707110,0145530396,L,7.3|MUHAMMAD RAFA ABQARY,262707111,0135294754,L,7.3|MUHAMMAD RENGGA OKTAVIAN,262707112,3134735356,L,7.3|MUHAMMAD ROBBEN NAUFAL PRANA,262707113,3140587027,L,7.3|MUHAMMAD SHAQI HAIDAR EL JAFRAN,262707114,3131894152,L,7.3|MUTYA SHAFA AUFANY,262707115,3143428508,P,7.3|NAILA ALPIYAH AURA AZZAHRA,262707116,0148981407,P,7.3|NAUFAL SHIDQI AZ-ZAIDAN,262707117,0131866208,L,7.3|NAZWA SYALUNA PUTRI,262707118,0135461252,P,7.3|RAFFI AHMAD PRATAMA RITONGA,262707119,0137117156,L,7.3|RAHMA KHAIRUSYIFA,262707120,3144537185,P,7.3|REGINA PUTRI SAYIDAH,262707121,0135407516,P,7.3|SALSABILA NUR ZAKIAH,262707122,0135456939,P,7.3|SITI NUR DALILAH,262707123,3136110983,P,7.3|SYALFANIE SUHAYLLA,262707124,3145461777,P,7.3|YOVIE ARFA MUMTAZA,262707125,3149844916,L,7.3|YUSNA DAVITA,262707126,0143105872,P,7.3|ZAENAB MUSYARROFAH,262707127,0132793725,P,7.3|ZAHWA IZZAH INSIRAH,262707128,3131710173,P,7.3|ZASKIA AWALIA RAMADHANI,262707129,3134000346,P,7.3|AISHA THALITA AZ ZAHRA,262707130,3148671340,P,7.4|ALBY LUTHFY PRATAMA,262707131,3130578389,L,7.4|ALIF ERBHIAN,262707132,3143849373,L,7.4|ALIKA NAILA ANJANI,262707133,3130868647,P,7.4|ALMIRA FATIYATU RACHMA,262707134,3147432325,P,7.4|ALZIKRA HARIS FADILAH,262707135,0131248475,L,7.4|AZKA FARID ATHALLAH,262707136,0135331241,L,7.4|BENING ERDINA PUTRI,262707137,3137858549,P,7.4|DIKA ASODIK,262707138,0131148263,L,7.4|FAREL CHOIRUL IQBAL MAULANA ALFARIZ,262707139,0146597962,L,7.4|GILANG RAMADAN,262707140,3134477075,L,7.4|HAFIZA KHAIRA LUBNA,262707141,0144404084,P,7.4|IBNU RAMADHAN,262707142,0138162685,L,7.4|JAHWA MAULIDA,262707143,3146599890,P,7.4|KHANZA MAULIDYA AZZAHRA,262707144,0141781012,P,7.4|LATISHA RIFKA RAMADHANI,262707145,0148547662,P,7.4|LUTFI SHAKI ZAIDAN,262707146,0142524294,L,7.4|MUHAMAD ADNAN AL QUSAIRI,262707147,3148757069,L,7.4|MUHAMMAD PALHAN,262707148,3147873890,L,7.4|MUHAMMAD ABIDZAR AL'GHIFARIE,262707149,0132503498,L,7.4|MUHAMMAD ALFAN SANUSI,262707150,3148152462,L,7.4|MUHAMMAD AZFAR FIRDAUS,262707151,0138014477,L,7.4|MUHAMMAD FAIQ ANNAFI,262707152,3133748437,L,7.4|MUHAMMAD NABIEL HAIKAL,262707153,3135096883,L,7.4|MUHAMMAD NAZRIEL FERLIANSYAH,262707154,0146618090,L,7.4|MUHAMMAD RAFA PUTRA NAWAWI,262707155,3144458058,L,7.4|MUHAMMAD RIMAN MAULANA,262707156,3130304750,L,7.4|MUHAMMAD SAFARRAZ MAZEA AL-MALIKY,262707157,3132564271,L,7.4|MUHAMMAD YUMNA KUNTORO,262707158,0137992061,L,7.4|NABILA ASSYIFA PUTRI,262707159,3138805749,P,7.4|NAYLA KHANZA OKTAVIANI,262707160,0133343655,P,7.4|NISRINA FAUZIYYAH,262707161,0145733301,P,7.4|NIZAM ALBANI YUSUP,262707162,3140175452,L,7.4|RAIHANA YASMINA FAIHA,262707163,3137520439,P,7.4|REVAN ATALLA KIANDA,262707164,0143606774,L,7.4|RIANI DIAN ANDRIYANI,262707165,3141563610,P,7.4|SHAFA MAULIDA,262707166,0135707673,P,7.4|SITI SAKINATUNAJA AL-ZEIN,262707167,0139286375,P,7.4|VANI TIUR ALMIRA MANURUNG,262707168,3141868036,P,7.4|ZAKIA AINUN MAHIYA,262707169,3140771986,P,7.4|ZIYAN ZABRAN LAYUK,262707170,0144784877,L,7.4|ABIYYU TAUFIQUL IHSAN,252607001,3123786903,L,8.1|ADAM FATHIR AL-GHAZALI,252607047,0137772092,L,8.1|AHMAD ZIDAN FIRDAUS,252607140,0138412876,L,8.1|ALENKRINNA LITIVALISTHA,252607142,3134503305,P,8.1|ALI YANSAH ASTAKARI,252607143,0123396970,L,8.1|ALIKA FARAYA,252607144,3129819135,P,8.1|ANNISA SYAFIKA,252607009,0122645168,P,8.1|ARGHI SATYA ANGGARA,252607101,0138440390,L,8.1|AZZAHRA RAMADANI,252607102,0132381767,P,8.1|BARA ZHAFIR MUMTAZ,252607148,0135761552,L,8.1|DERA RAMADHANI,252607013,3137433723,P,8.1|DIANDRA ARIPUTRA NUGRAHA,252607060,3125569673,L,8.1|DIARA RHEIVANIA HARDIANSYAH,252607105,0134009931,P,8.1|FAKHRI GHAISAN HAFY KAMIL,252607107,3130875958,L,8.1|GIAN HAWWARI NAZHAN,252607155,0127147078,L,8.1|INDRA FEBRIANSYAH,252607111,0134644495,L,8.1|ISMI ROHIMAH ANWAR,252607066,0132672775,P,8.1|KAFIE EL AZZAM,252607067,3122835475,L,8.1|KAYLA PUTRI AZAHRA,252607022,0139447999,P,8.1|KEYSHA KIANDRA GHASSANI,252607113,0124319263,P,8.1|KHAZANA RIDHA NAYLA,252607159,3124200167,P,8.1|LIBY ALSHYAQILA RUVIYADI,252607160,0134913364,P,8.1|M. AZKHA AZRIL,252607115,3134237843,L,8.1|MESYA PUTRI RASYABILLA,252607071,3135613753,P,8.1|MUHAMAD IRGI MUNAJAT,252607024,3127335618,L,8.1|MUHAMMAD ALKAHFI WIDYO UTOMO,252607076,3129769219,L,8.1|MUHAMMAD ARIFIN ILHAM,252607121,3120819849,L,8.1|MUHAMMAD AZKA RAMADHAN,252607030,3128693316,L,8.1|MUHAMMAD AZKHA ADITYA PRASETYO,252607077,3123527505,L,8.1|MUHAMMAD FARIZ NURSYIBBAN,252607031,3127198798,L,8.1|MUHAMMAD RAYHANUL FATWA IRAWA,252607125,3133773225,L,8.1|NADIRA APRILLIA,252607032,3132577047,P,8.1|NASYWA AINUN AFIFAH,252607033,0129753576,P,8.1|NAURA LARASATI HERLAMBANG,252607034,0131778347,P,8.1|NENENG NUR AFIKAH,252607128,3134790317,P,8.1|RAFA RIZKI ALFATHAN,252607172,0136666923,L,8.1|RAISA ZALFA ARSANDI,252607083,0124835454,P,8.1|RAMDHAN KEMAS BETERQIES,252607084,0122359883,L,8.1|SAKINAH EKA PUTRI BATUBARA,252607176,3135492689,P,8.1|SALSA AULIA RAMADHANI,252607041,0131075861,P,8.1|SALSABILA AQILAH PUTRI,252607087,3136339992,P,8.1|SITI KOMALASARI,252607178,3133382078,P,8.1|SITI MAS HOFIFAH AZAHIRAH AZIKIAH,252607043,0126175233,P,8.1|ZAHRA MIKAYLA SYAHPUTRI,252607091,3137158672,P,8.1|ADILA KHAESYA PUTRY,252607002,3124194152,P,8.2|AFIQAH RAISHA PUTRI SU'AD,252607094,3125931151,P,8.2|AIRELL QUTRATU'AIN,252607004,0136630089,P,8.2|ALANDIRA TAMA JUVTI,252607051,0136041779,L,8.2|ALFIATU RAHMAH HAKIM,252607006,0121937311,P,8.2|ALIFA NAUFALYN FITRIA RABBANI,252607098,0132324121,P,8.2|ALMER RAZA SUTA,252607008,0125568421,L,8.2|ANISA NUR MAULIDA MUSTOPA,252607145,3138110100,P,8.2|ANNISAA MAULIDIA,252607055,3138014342,P,8.2|ARVITA NOVIA RISTI,252607010,3118108300,P,8.2|EGA APRILIA,252607151,3133650150,P,8.2|ELANG MALIK ANDIKA,252607015,0125357185,L,8.2|FAHIRA NISWATUL LAILA,252607016,3129055753,P,8.2|FATHIN SINTIA ALI,252607062,3137617198,P,8.2|FEBI AIDA DENADI,252607108,3131543879,P,8.2|FELLY INDAH SAPUTRI,252607063,0129295709,P,8.2|GINA AULIA,252607064,0122918571,P,8.2|IMAM BUDI PRAYOGA UTOMO,252607065,0137242768,L,8.2|IRDIYANA FEBRIYANTI,252607020,0132189908,P,8.2|M. HAIDAR ARDAN,252607161,3128881849,L,8.2|MAULANA AKBAR,252607117,0128332128,L,8.2|MUHAMAD IKBAL,252607073,3137573092,L,8.2|MUHAMMAD REZA,252607027,0137917640,L,8.2|MUHAMAD SAYYID NAFISYAHIR,252607119,3131285081,L,8.2|MUHAMMAD DAFFA AGHNA RAMAD,252607122,0128776594,L,8.2|MUHAMMAD FAIZ ANNAQI,252607123,3124098977,L,8.2|MUHAMMAD NAUFAL RAFA,252607078,3133962773,L,8.2|NASYA ATHIFA MAULIDA,252607127,3137123981,P,8.2|NURUL KHOER,252607035,0123761560,P,8.2|PANDU DAFFA ADMAJA,252607036,0133151200,L,8.2|RADEN ACHMAD FADLI RAMADHAN,252607130,3133419927,L,8.2|RAFA ABDI SYAHPUTRA,252607131,0134011411,L,8.2|RAHMAT BAGAS APANDI,252607082,0137143700,L,8.2|RAMADHAN HAFIZH PUTRA,252607132,3124585813,L,8.2|RANA HAURA NURUL IZZAH,252607173,3139765513,P,8.2|RANI AQILA AZZAHRA,252607039,3136902279,P,8.2|RIFQI SYAHRUL MUBAROK,252607086,0135261377,L,8.2|SAHIL HAFIZH,252607175,3130535673,L,8.2|SASKIA NUR MAULIDA,252607177,0134915777,P,8.2|SILVIA RAHМАН,252607042,0121376035,P,8.2|SITI FATIMAH SUPRIADI,252607088,3123492827,P,8.2|SITI ZAHRA RAHMADANI,252607044,0135998412,P,8.2|ZULFA ALIKHA SUSANTO,252607092,03120572818,P,8.2|ADINDA SALSABILA YAHYA,252607048,0125498748,P,8.3|ADIS MUHAMAD HAIDAR,252607093,0122475295,L,8.3|AHMAD FATHIR PRATAMA,252607003,3136561343,L,8.3|AHMAD HAFISH RAMADHAN,252607049,0135723951,L,8.3|AHMAD NIZAR MUHTAROM,252607095,3121149170,L,8.3|AIRZAFANA ELMUGHNI PRAYOGI,252607141,3126109204,L,8.3|AJENG MAULIDA,252607050,0124454724,P,8.3|AKBAR AL'AWI KURNIAWAN,252607005,0126195624,L,8.3|ALFITA DEWI NAFIA,252607052,3127940850,P,8.3|ANDINI RAHMAWATI,252607099,3123578516,P,8.3|AQILAH NUR LAILATUL ZASKIYAH,252607146,3127243244,P,8.3|ASTI WINDA MARIAM BAEDOWI,252607056,0125429198,P,8.3|AZZAM KHAIRUL MUFLIHIN,252607011,3126404727,L,8.3|BARIQ AL FAIZ,252607103,3122691860,L,8.3|CLARA SUCI RAMADHANI,252607057,0127115851,P,8.3|DAVINA RAHMA MULYADI,252607150,3133159880,P,8.3|DESTA NUGI SETIAWAN,252607058,3125422130,L,8.3|EL ALGHIFARI,252607152,0128234036,L,8.3|FEBRIANA PUTRI PERMAΝΑ,252607153,3136800358,P,8.3|FEBRIANI PUTRI PERMAΝΑ,252607017,3138097148,P,8.3|FIRDA AULIA,252607109,0135404369,P,8.3|FRICILLA RAHMALIA PUTRI,252607154,0127731574,P,8.3|HABIBIE AZZAMY,252607156,3139805795,L,8.3|HANA AQILA HUMAIRA,252607110,0133500686,P,8.3|JASMINE FAIHA SOFYAN,252607112,0138411657,P,8.3|JULIAN ALDRIANSYAH,252607021,0139300523,L,8.3|KHOIRUNNISA AZZAHRA,252607023,3138924510,P,8.3|MUHAMAD ADRIAN AL FAIRUS,252607025,0135108128,L,8.3|MUHAMAD ESA AL RAVA,252607072,3135357031,L,8.3|MUHAMAD NABIL ALFIANSYAH,252607026,3123376596,L,8.3|MUHAMAD SATRIA,252607074,3124776697,L,8.3|MUHAMADANIL BAQI BILLAH,252607028,3134264087,L,8.3|MUHAMMAD ALIF NOPRIANSYAH,252607029,0123265311,L,8.3|MUHAMMAD IRSYAD,252607124,3125847556,L,8.3|MUTIARA AULIYANI,252607126,3126625088,P,8.3|NABILA NURHOLIFAH,252607168,3127188779,P,8.3|NESYA RIZKYNA PRISTIANURI,252607169,0137027450,P,8.3|OMAR ABDUL FATAH,252607170,3129922095,L,8.3|QAIREEN FAEYZA ZAHRAN,252607129,0139405156,P,8.3|RAGHIL FAUJAN,252607037,0137627735,L,8.3|RAISA ASKANA SAKHI,252607038,0132867977,P,8.3|REISYA FAUZIAH,252607133,0133228363,P,8.3|RIZKI MAULANA,252607134,3119182422,L,8.3|SITI AZQIA ZAHRA,262708180,0126525120,P,8.3|SITI HAZQYATUJAZILAH,252607136,3138123826,P,8.3|AHMAD ARFFA RAMADHAN,252607139,0134654544,L,8.4|AKIFA NAILA RAMADHANI,252607096,0132150555,P,8.4|ALDO HERIAWAN,252607097,3134321339,L,8.4|ALIN ANANDA WIJAYA,252607007,3133798929,P,8.4|ALVI NANDA PUTRA,252607053,3125603271,L,8.4|AMIRA PUTRI,252607054,0135936440,P,8.4|AQILA PUTRI ROBBIYATUL HIKMAH,252607100,3136179589,P,8.4|AZKA MIZA RAYSAN,252607147,3124984797,L,8.4|CINTA SHIDQIA,252607012,0139940040,P,8.4|CLASSIKA MEDINAH GUMELAR,252607104,3128925981,P,8.4|DEVINZA ARRASYA,252607014,3129555575,L,8.4|DEWI PURMITASARI,252607059,3134670530,P,8.4|DWIYAN ALDO SUSANTO,252607106,0139686413,L,8.4|FABIAN NAUFAL GIBRAN,252607061,3127333796,L,8.4|GAYDA NAYURA GASSANΙΑ,252607018,3138457269,P,8.4|HASNA AULIA SANTIKA,252607157,3131854896,P,8.4|IQBAL RAMADHAN,252607019,3122080907,L,8.4|KANAYA APRILIA AZZAHRA,252607158,3139113373,P,8.4|KEYSHA HASNA BURHANUDIN,252607068,0137718265,P,8.4|KINARA ARSYA ARUNA,252607114,0133238474,P,8.4|MARWAH SAFITRI,252607116,3144497304,P,8.4|MUHAMAD ABDUL ROSYID,252607162,0133590632,L,8.4|MUHAMAD HAFIZ SABIHISMA,252607163,3126462915,L,8.4|MUHAMAD HAIKAL NUR ISKANDAR,252607164,3131466633,L,8.4|MUHAMAD VALENTINO RAMADHAN,252607165,0121964906,L,8.4|MUHAMMAD ABIDZAR ALFAALIH TAIHUTTU,252607075,3138231159,L,8.4|MUHAMMAD ADJI PUTRA,252607120,3124515263,L,8.4|MUHAMMAD AZKA BUDIMAN,252607166,3133737833,L,8.4|MUHAMMAD FAKHRI BACHRAIN,252607167,0136272380,L,8.4|MUHAMMAD QOYYIMA ILHAM,252607118,3131674897,L,8.4|MUHAMMAD RIZKI HAFIDZ,252607070,3125466029,L,8.4|NAJWA DZAKIYA ASSYIFA,252607079,3132856360,P,8.4|NAYRA PUTRI RAHAYU,252607080,3138355729,P,8.4|PUTRI SEPTIANI ALFIANA SALIM,252607081,3126434455,P,8.4|QOORY SYAHLA QHANITA,252607171,0132493900,P,8.4|RATIH ARISTA DALIMUNTE,252607085,3125539061,P,8.4|REFAN AZHARI,252607174,3120856449,L,8.4|REVANDYA AKMAL KHAIRAN,252607040,3133111257,L,8.4|SITI NAILA FITRIYANI,252607089,3133693054,P,8.4|SITI NURAINI,252607137,3131313162,P,8.4|SITI SOPIATUL ATKIYA,252607179,3124334561,P,8.4|SYAVINKA AAIDA RAMADHANI,252607090,3121498767,P,8.4|TARAKA FIRJATULLAH,252607045,3123654321,L,8.4|VIALSA RAMADHANI,252607138,3125137135,P,8.4|ZAKI SALIM LUQMANUL HAKIM,252607046,0121332002,L,8.4|ABIDZAR AL GHIFARI LUBIS,242507001,0112250701,L,9.1|AISHA RIZKYA ZHAFIRA,242507185,0118468729,P,9.1|ALDIAN FAIZ ABIMANYU,242507049,0115521932,L,9.1|AN NISA AULIA RAHMAH,242507051,03113035206,P,9.1|ASSYIPA ALDAWIYAH,242507140,3126598859,P,9.1|ATARA NAWAWINA ALAYA,242507006,3115132886,P,9.1|DANISH ALDRIC KANDELA,242507053,0129682086,L,9.1|ELVINA RAMADHANI,242507011,0128031712,P,9.1|FAKHRI AL YASIN,242507144,0125950149,L,9.1|HAIKAL YUSUF MUTAQIN,242507146,0126738383,L,9.1|HELMAWATI NISPI,242507148,0127732474,P,9.1|KALILA AZZAHRA AGSYA,242507150,0123215234,P,9.1|KARIN PUTRI RAHMANIAR,242507151,0123810952,P,9.1|MEDINA RAYANI PUTRI,242507154,0111262830,P,9.1|MUHAMAD FIKRI HAIKAL,242507067,3115858704,L,9.1|MUHAMAD KURNIAWAN,242507110,3128561717,L,9.1|MUHAMAD RISKI,242507163,0119272535,L,9.1|MUHAMAD RIZKY ALFARIZI,242507156,0114707555,L,9.1|MUHAMAD YAHYA SEPTIAN,242507023,3114407011,L,9.1|MUHAMMAD AMMAR AZZIKRA,242507026,0121453887,L,9.1|MUHAMMAD AZZAM ZAIDDAN,242507113,0127804343,L,9.1|MUHAMMAD FADIL ALFARIZKY,242507066,0125048100,L,9.1|MUHAMMAD IMAM RIYADHUSSOLIHIN,242507029,0121991684,L,9.1|MUHAMMAD NICKY PRATAMA,242507074,0112208538,L,9.1|MULYANA BADAR MUHTAR,242507167,0126632131,L,9.1|NAJLAA KIRANA PUTRI,242507116,0126757694,P,9.1|NARENDRA DARVESH PRADITYA,242507117,0129767780,L,9.1|NAZWA ZAKIYAH,242507031,3122953563,P,9.1|NOVITA DWI LESTARI,242507032,3128551310,P,9.1|RAFA FAEYZA ADITYA,242507123,0124575918,L,9.1|RAFI IMADUL BILAD,242507081,0118347648,L,9.1|RIDHONINO SETIAWAN,242507174,0115176085,L,9.1|RIYAN AZZARI DALIMUNTE,242507126,0124959392,L,9.1|SIFA RAMADANI,242507129,0114585043,P,9.1|SILVIA HIDAYAT,242507130,0115912357,P,9.1|SITI SILVIAWATI,242507086,3120214186,P,9.1|SITI WINDI AZAHIRA,242507087,0116017127,P,9.1|SITI ZAHIRA,242507088,0129243631,P,9.1|SYLA RAHMAΝΙΑ,242507186,0122849032,P,9.1|VIOLA ZULFIANI,242507089,0117682754,P,9.1|VISKA ARIANI,242507090,3125102794,P,9.1|WILDAN NURULLOH,242507046,3112799899,L,9.1|ZIDAN ALGIFARI SURYAMAN,242507179,0112922469,L,9.1|AFRINA RAFANIA RHAMDANI,242507093,0123145389,P,9.2|AL ZAHIRA SRI WIJAYA,242507094,0112458312,P,9.2|ALFAN ANDRIAN,242507050,3110372642,L,9.2|ARSYAVIN WIDAN SAPUTRA,242507005,3114044196,L,9.2|ARYA NAILUL KHALIL,242507139,0119108501,L,9.2|AURORA MIKHAYLA RAMADANTI,242507052,3126814449,P,9.2|AZZAHRA WIDYASIH PUTRI,242507141,0121057775,P,9.2|BUNGA KEYSHA DARMAWAN,242507008,3128932716,P,9.2|DENDY ALFAREZ PUTRA WIDODO,242507054,0124462929,L,9.2|EGI,242507010,3114633046,L,9.2|FAHMI PUTRA RIFA'I,242507056,3111616100,L,9.2|FAIRUZ FUADI SAPUTRA,242507101,3114479502,L,9.2|FAJAR ADHITAMA,242507102,3125296816,L,9.2|FARASKA SURYA FADILAH,242507145,0127713764,L,9.2|FARSHA FAIZI SAPUTRA,242507057,0113281236,L,9.2|HASBI ALGANI,242507147,0117447040,L,9.2|IBRAHIM DZAKI CHANDRA,242507104,0111135296,L,9.2|INTAN SYIFA MUFADHILAH,242507149,0129554291,P,9.2|IRVAN MAULANA,242507060,0116127084,L,9.2|JERRY AHMAD AL-FARIZZI,242507016,0121692888,L,9.2|KALILA RIFDA,242507017,0126563139,P,9.2|KHANZA CHAERUNNISA,242507063,3122278981,P,9.2|MUHAMAD ALVIN MULYADI,242507073,0127635435,L,9.2|MUHAMAD DHARIN DIMYATI,242507021,0117756964,L,9.2|MUHAMAD RAFI FAHRUROHMAN,242507111,3115697782,L,9.2|MUHAMMAD AZZMI KHAIRAN,242507114,0114059284,L,9.2|MUHAMMAD ENO KURNIAWAN,242507159,3127311018,L,9.2|MUHAMMAD FAHRY FIQRIANI,242507161,0122039029,L,9.2|MUHAMMAD IBNU SABIL,242507028,3129677731,L,9.2|MUHAMMAD RENALDY SYAHRILLAH,242507076,0121473107,L,9.2|MUHAMMAD RIFYAN,242507162,0119702922,L,9.2|NAJWATUL LATIFAH,242507187,0102357258,P,9.2|NAWA AURA WAHYUDI,242507119,3117784761,P,9.2|NUGIH PRATΑΜΑ,242507078,0118972393,L,9.2|NUR SHAFA KAMILA,242507080,0115974381,P,9.2|PUTRI CAHYA YULIA,242507169,0116845427,P,9.2|RAFIF NAUFAL FADHILAH,242507170,0127658437,L,9.2|ROFI ALKHAYIS PUTRA YOLANDA,242507127,3125609025,L,9.2|SHEREN AZKIA CALISTA,242507085,0127368315,P,9.2|SITI QISWAH,242507041,0113065360,P,9.2|ULFAH HAKIMAH AKBAR,242507044,0129472451,P,9.2|YASMIN ADZKIA,242507131,3115175343,P,9.2|YUNITA PERMATA SARI,242507133,0113300370,P,9.2|ZAHRAH ZAAFARANI,242507092,0127178677,P,9.2|ACHDAN YUSUF KRISTIANTO,242507002,3118256582,L,9.3|ADELIA ALYA PUTRI,242507003,0128183889,P,9.3|AFRAM MAHAWIRA,242507047,0128502377,L,9.3|ALFIAN SYAHPUTRA,242507095,3120024158,L,9.3|ALIKA KHOIRUNNISA,242507138,0116206407,P,9.3|BALQIS UFAIRAH,242507007,0123010248,P,9.3|CALLISTA NEYSA SAFARI,242507009,0121170697,P,9.3|DHENA ZAHRA RAMADHANI,242507098,0128640046,P,9.3|FAHRI NURHAKIM,242507100,0116919283,L,9.3|FATIMAH RAHMA,242507013,0129629537,P,9.3|FIKRI SURYA PRATAMA RAMADHAN,242507014,0117318247,L,9.3|GEMA ARVI RAMADHAN,242507015,0111856130,L,9.3|HILMA AYUNINDIA PUTRI,242507103,0125846934,P,9.3|KENZA ALGIYASA RAMADHAN,252608188,0114001833,L,9.3|LAURA KIRANA SYIFAN,242507064,0114668414,P,9.3|M. RAMLAN,242507107,0107534944,L,9.3|MAURA SILVIANA DEVI,242507153,0129560342,P,9.3|MUHAMAD HASBI AL-HADORI,242507069,3118528446,L,9.3|MUHAMAD RAMA HAIKAL ANDRIAN,242507155,3122869484,L,9.3|MUHAMAD SYAGHILUL KHAIR,242507157,3128263561,L,9.3|MUHAMMAD AGHA ALDZAKWAN,242507071,3127683602,L,9.3|MUHAMMAD ALIF AHDAN,242507072,0118702008,L,9.3|MUHAMMAD GALEN HAMIZAN FAIQ,242507027,3120581901,L,9.3|MUHAMMAD MAHAMERU,242507030,0115155912,L,9.3|MUHAMMAD RAFI AL ZAKI,242507075,0125695290,L,9.3|MUHAMMAD SALMAN ALPARIZZI,242507164,0113012488,L,9.3|NUR AKBAR,242507079,0114829364,L,9.3|PRADIPTA DAMAR ATMAJA,242507121,0124241649,L,9.3|RAFA ALDIAN SIREGAR,242507034,0125010329,L,9.3|RAHMA FITRIANI,242507035,0128054159,P,9.3|RAISSA RAWNIE RIANTA,242507082,0125692386,P,9.3|RAVAEL ARIFIAN,242507083,3127004840,L,9.3|REYHANI KURNIA RAMADHANI,242507172,0127614774,P,9.3|SABRINA SOFIA FIRDAUS,242507128,3123791401,P,9.3|SASKIA SHAFARANI,242507040,31108930891,P,9.3|SHAFA RIZKIKA RAMADHANI,242507084,3118689729,P,9.3|TSANI LATIFA,242507043,3119726769,P,9.3|WAHYU RIFTIANSYAH CAHYO PRAYOG,242507091,0121650332,L,9.3|YASMIN NABILA RAMADHANI,242507132,0116646191,P,9.3|ZAIN GIBRAN,242507134,0122321920,L,9.3|ZARA ALIFAH NOVIANTI,242507135,0115864404,P,9.3|ZASKIA OKTAVIANI,242507136,0117852452,P,9.3|ZEIN ABDULLAH SOPYAN,242507178,3120378578,L,9.3|ADISTYA SAHIRA NASUTION,242507137,0114272306,P,9.4|AHTAR MAULANA SANJAYA,242507048,3113568980,L,9.4|ANANDA CHIARA CHANA LUCITA HAR,242507004,3113858725,P,9.4|ANDHIKA MAULANA RIZKY,242507096,3129608907,L,9.4|ANNALISA PUTRI ANGGRAENI,242507184,0118448564,P,9.4|DESHINTA MAHARANI,242507055,0119756570,P,9.4|DHIA AYU SYARAFANA,242507142,0128579453,P,9.4|DINDA RIZKY LESTARI,242507099,0114364305,P,9.4|FAHMI NURUL DZIHNI,242507012,0111449123,L,9.4|FAJAR RAMADHAN,242507143,0107745175,L,9.4|IKRIMA AZZAHRA,242507058,3122354991,P,9.4|INDRIYANA,242507059,0126291785,P,9.4|JOE HANDY VICKY ATMAJA,242507061,0144020622,L,9.4|KENZIE EKO SADUBI,242507018,0116692650,L,9.4|KHADIZAH PUTRI FAUZIAH,242507062,0114934071,P,9.4|MAULANA ABDUL HADI,242507152,0111138804,L,9.4|MUHAMAD ARYA PRATAMA,242507019,0126737439,L,9.4|MUHAMAD DANU PERMAΝΑ,242507020,0124559999,L,9.4|MUHAMAD GISMA APRIATNA,242507068,0128155135,L,9.4|MUHAMAD ILHAM FIQRIANSYAH,242507070,3122395422,L,9.4|MUHAMAD RIFAT SULAEMAN,242507077,0126156847,L,9.4|MUHAMAD YUSUF GHAZALI SUTISNA,242507024,0118598035,L,9.4|MUHAMMAD ABIAN PRATAMA PUTRA,242507025,0129777548,L,9.4|MUHAMMAD ANWARUDIN,242507112,3129727489,L,9.4|MUHAMMAD ARKA SAPUTRA,242507065,0123775509,L,9.4|MUHAMMAD AZKA ADYARIZKY,242507158,3114586617,L,9.4|MUHAMMAD FACHRI TIRTAYASA,242507160,3128358398,L,9.4|MUHAMMAD SYATHIR,242507182,0121665902,L,9.4|MUHAMMAD TIBRIZIK MUKODAM,242507165,0127611686,L,9.4|MUHAMMAD VICKY AKBAR,242507166,0123762074,L,9.4|NUFFAH JASMINE HAURA KHANSA,242507033,3118668179,P,9.4|NURHILMA NAFILA,242507168,3125724996,P,9.4|OCTA NUR'AENI,242507120,0112620301,P,9.4|PUTRI AYUDIA INKAN,242507122,0128792685,P,9.4|RAIF AL YASIR,242507036,0128822909,L,9.4|RAISA ALKAUTSAR,242507037,3124118938,P,9.4|RAYHAN HERMANSYAH,242507124,0114866515,L,9.4|REZKY AJI SAPUTRA,242507173,0116362683,L,9.4|SAEPUDIN,242507038,3125354904,L,9.4|SALWA ALFINA HUSNIYAH,242507039,0121847853,P,9.4|SITI AYRA,242507176,3127820485,P,9.4|SITI AZZAHRA BATUBARA,242507177,0115727627,P,9.4|SITI SALWA KHAMALIYAH,242507042,3121489131,P,9.4";
+
+        const studentsArray = compressedStudentData.split('|').map(entry => {
+            const [nama, nis, nisn, jk, kelas] = entry.split(',');
+            return { nama: nama.trim(), nis: nis.trim(), nisn: nisn.trim(), jk: jk.trim(), kelas: kelas.trim() };
+        });
+
+        // Get unique classes for dropdown
+        const uniqueClasses = [...new Set(studentsArray.map(s => s.kelas))].sort();
+
+        // ============================================================================
+        // 2. DASHBOARD & TABS LOGIC
+        // ============================================================================
+        let isAdminLoggedIn = false;
+        const ADMIN_PIN = "123456"; // PIN rahasia untuk demo
+
+        // Calculate Student Demographics
+        let totalLaki = 0;
+        let totalPerempuan = 0;
+        let classDemographics = {};
+
+        studentsArray.forEach(s => {
+            if(s.jk === 'L') totalLaki++;
+            if(s.jk === 'P') totalPerempuan++;
+            
+            if(!classDemographics[s.kelas]) {
+                classDemographics[s.kelas] = { total: 0, L: 0, P: 0 };
+            }
+            classDemographics[s.kelas].total++;
+            if(s.jk === 'L') classDemographics[s.kelas].L++;
+            if(s.jk === 'P') classDemographics[s.kelas].P++;
+        });
+
+        // Set Top Stats
+        document.getElementById('stat-total-siswa').innerText = studentsArray.length;
+        document.getElementById('stat-total-l').innerText = totalLaki;
+        document.getElementById('stat-total-p').innerText = totalPerempuan;
+
+        // Render Class Grid
+        const classGrid = document.getElementById('class-stats-grid');
+        uniqueClasses.forEach(cls => {
+            const data = classDemographics[cls];
+            const div = document.createElement('div');
+            div.className = "bg-gray-50/80 rounded-xl p-3 border border-gray-100/80 flex flex-col items-center hover:bg-emerald-50 transition-colors";
+            div.innerHTML = `
+                <div class="font-bold text-emerald-800 text-sm mb-1">Kelas ${cls}</div>
+                <div class="text-2xl font-black text-gray-800 mb-1">${data.total}</div>
+                <div class="flex gap-2 text-[10px] font-bold">
+                    <span class="text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded">L: ${data.L}</span>
+                    <span class="text-pink-700 bg-pink-100 px-1.5 py-0.5 rounded">P: ${data.P}</span>
+                </div>
+            `;
+            classGrid.appendChild(div);
+        });
+
+        // TABS Event Listeners
+        const tabBeranda = document.getElementById('tab-beranda');
+        const tabAdmin = document.getElementById('tab-admin');
+        const secBeranda = document.getElementById('beranda-section');
+        const secAdmin = document.getElementById('admin-section');
+        const loginModal = document.getElementById('login-modal');
+
+        tabBeranda.addEventListener('click', () => {
+            secBeranda.classList.remove('hidden');
+            secAdmin.classList.add('hidden');
+            secAdmin.classList.remove('flex');
+            
+            tabBeranda.classList.replace('text-emerald-200', 'text-white');
+            tabBeranda.classList.replace('border-transparent', 'border-white');
+            tabBeranda.classList.add('bg-emerald-700/50');
+            
+            tabAdmin.classList.replace('text-white', 'text-emerald-200');
+            tabAdmin.classList.replace('border-white', 'border-transparent');
+            tabAdmin.classList.remove('bg-emerald-700/50');
+        });
+
+        tabAdmin.addEventListener('click', () => {
+            if(!isAdminLoggedIn) {
+                loginModal.classList.remove('hidden');
+                document.getElementById('pin-input').value = '';
+                document.getElementById('pin-input').focus();
+                document.getElementById('login-error').classList.add('hidden');
+            } else {
+                showAdminView();
+            }
+        });
+
+        function showAdminView() {
+            secBeranda.classList.add('hidden');
+            secAdmin.classList.remove('hidden');
+            secAdmin.classList.add('flex');
+            
+            tabAdmin.classList.replace('text-emerald-200', 'text-white');
+            tabAdmin.classList.replace('border-transparent', 'border-white');
+            tabAdmin.classList.add('bg-emerald-700/50');
+            
+            tabBeranda.classList.replace('text-white', 'text-emerald-200');
+            tabBeranda.classList.replace('border-white', 'border-transparent');
+            tabBeranda.classList.remove('bg-emerald-700/50');
+        }
+
+        window.closeLogin = () => loginModal.classList.add('hidden');
+
+        document.getElementById('login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const pin = document.getElementById('pin-input').value;
+            if(pin === ADMIN_PIN) {
+                isAdminLoggedIn = true;
+                closeLogin();
+                showAdminView();
+                showToast("Berhasil masuk sebagai Admin", "success");
+            } else {
+                document.getElementById('login-error').classList.remove('hidden');
+            }
+        });
+
+        // ============================================================================
+        // 3. FORM & FILTER DOM LOGIC
+        // ============================================================================
+        const form = document.getElementById('uks-form');
+        const inputTanggal = document.getElementById('tanggal');
+        const selectKelasFilter = document.getElementById('pilih-kelas');
+        const selectNama = document.getElementById('nama');
+        const submitBtn = document.getElementById('submit-btn');
+
+        // Setup Options
+        const classFragment = document.createDocumentFragment();
+        const filterClassFragment = document.createDocumentFragment();
+        uniqueClasses.forEach(cls => {
+            classFragment.appendChild(new Option(cls, cls));
+            filterClassFragment.appendChild(new Option(cls, cls));
+        });
+        selectKelasFilter.appendChild(classFragment);
+        document.getElementById('filter-kelas').appendChild(filterClassFragment);
+
+        // Date Defaults
+        const today = new Date();
+        const offset = today.getTimezoneOffset() * 60000;
+        const localISOTime = (new Date(today.getTime() - offset)).toISOString().split('T')[0];
+        const localMonthTime = localISOTime.substring(0, 7);
+        
+        inputTanggal.value = localISOTime;
+        document.getElementById('filter-date').value = localISOTime;
+        document.getElementById('filter-month').value = localMonthTime;
+        document.getElementById('beranda-date').value = localISOTime;
+
+        // Auto-fill logic
+        selectKelasFilter.addEventListener('change', (e) => {
+            const filteredStudents = studentsArray.filter(s => s.kelas === e.target.value);
+            selectNama.innerHTML = '<option value="" disabled selected>-- Pilih Nama Siswa --</option>';
+            selectNama.disabled = false;
+            
+            ['nis', 'nisn', 'jk', 'kelas'].forEach(id => document.getElementById(id).value = '');
+            
+            filteredStudents.forEach(s => selectNama.appendChild(new Option(s.nama, s.nama)));
+        });
+
+        selectNama.addEventListener('change', (e) => {
+            const match = studentsArray.find(s => s.nama === e.target.value && s.kelas === selectKelasFilter.value);
+            if (match) {
+                document.getElementById('nis').value = match.nis;
+                document.getElementById('nisn').value = match.nisn;
+                document.getElementById('jk').value = match.jk;
+                document.getElementById('kelas').value = match.kelas;
+            }
+        });
+
+        // Utility: Show Toast message
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const colorClass = type === 'success' ? 'bg-emerald-600' : 'bg-red-500';
+            
+            toast.className = `toast-enter flex items-center gap-3 ${colorClass} text-white px-5 py-3 rounded-2xl shadow-xl border border-white/20`;
+            toast.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    ${type === 'success' 
+                        ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />'
+                        : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />'}
+                </svg>
+                <span class="font-bold tracking-wide">${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                toast.style.transition = 'all 0.3s ease-in';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function formatDateIndo(dateStr) {
+            if(!dateStr) return "-";
+            return new Date(dateStr).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        }
+
+        // ============================================================================
+        // 4. FIREBASE & RENDERING LOGIC
+        // ============================================================================
+        let allReports = [];
+        let currentFilteredReports = [];
+        let laporanCollection;
+
+        const appId = 'uks-pmr';
+        const firebaseConfig = {
+            apiKey: "AIzaSyAYSemlYt0-hc6KCkWMJoYXquMwckMb7Lk",
+            authDomain: "uks-pmr.firebaseapp.com",
+            projectId: "uks-pmr",
+            storageBucket: "uks-pmr.firebasestorage.app",
+            messagingSenderId: "561561444965",
+            appId: "1:561561444965:web:31637ef40b604bce795c8c",
+            measurementId: "G-ZR68VP1H23"
+        };
+        let app, db, auth;
+        
+        try {
+            if(Object.keys(firebaseConfig).length > 0) {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+            }
+        } catch (e) { console.error("Firebase init error:", e); }
+
+        async function initApp() {
+            if(!auth) {
+                document.getElementById('status-dot').classList.replace('bg-yellow-400', 'bg-red-500');
+                document.getElementById('status-text').innerText = 'Offline Mode';
+                return;
+            }
+
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                if(auth.currentUser) {
+                    document.getElementById('status-dot').classList.replace('bg-yellow-400', 'bg-emerald-400');
+                    document.getElementById('status-text').innerText = 'Online Tersambung';
+                    submitBtn.disabled = false;
+
+                    laporanCollection = collection(db, 'artifacts', appId, 'public', 'data', 'laporan_uks');
+                    
+                    onSnapshot(laporanCollection, (snapshot) => {
+                        allReports = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        allReports.sort((a, b) => (b.waktuInput ? b.waktuInput.toMillis() : 0) - (a.waktuInput ? a.waktuInput.toMillis() : 0));
+                        
+                        renderPublicTable(); // Render Dashboard Public
+                        renderAdminTable();  // Render Admin Management
+                    }, (error) => showToast("Gagal memuat data", "error"));
+                }
+            } catch (error) {
+                document.getElementById('status-dot').classList.replace('bg-yellow-400', 'bg-red-500');
+                document.getElementById('status-text').innerText = 'Gagal Terhubung';
+            }
+        }
+
+        // Filter Logic for Beranda
+        document.getElementById('beranda-date').addEventListener('change', renderPublicTable);
+        
+        function renderPublicTable() {
+            const dateVal = document.getElementById('beranda-date').value;
+            const publicReports = allReports.filter(r => r.tanggal === dateVal);
+            
+            document.getElementById('stat-pasien-hari-ini').innerText = publicReports.length;
+            const tbody = document.getElementById('public-table-body');
+            tbody.innerHTML = '';
+
+            if (publicReports.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500 font-bold bg-gray-50/50">Tidak ada pasien tercatat pada tanggal ini.</td></tr>`;
+                return;
+            }
+
+            publicReports.forEach((report, index) => {
+                let timeStr = report.waktuInput && report.waktuInput.toDate ? report.waktuInput.toDate().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}) : '-';
+                
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-emerald-50/30 transition-colors";
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-gray-500 font-bold">${index + 1}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-gray-500 font-medium">${timeStr}</td>
+                    <td class="px-6 py-4 whitespace-nowrap font-black text-gray-900">
+                        <button onclick="window.showHistoryModal('${report.nisn}', '${report.nama.replace(/'/g, "\\'")}', '${report.kelas}')" class="text-emerald-700 hover:text-emerald-900 hover:underline">
+                            ${report.nama}
+                        </button>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-md text-xs font-black ${report.jk === 'L' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'}">${report.jk}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        <span class="inline-flex px-2 py-1 rounded bg-gray-100 font-bold text-gray-700">${report.kelas}</span>
+                    </td>
+                    <td class="px-6 py-4 text-gray-600 max-w-[200px] truncate" title="${report.keluhan}">${report.keluhan}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Filter Logic for Admin
+        const viewMode = document.getElementById('view-mode');
+        const filterDate = document.getElementById('filter-date');
+        const filterMonth = document.getElementById('filter-month');
+        const filterKelas = document.getElementById('filter-kelas');
+
+        viewMode.addEventListener('change', (e) => {
+            filterDate.classList.toggle('hidden', e.target.value !== 'harian');
+            filterMonth.classList.toggle('hidden', e.target.value === 'harian');
+            renderAdminTable();
+        });
+        filterDate.addEventListener('change', renderAdminTable);
+        filterMonth.addEventListener('change', renderAdminTable);
+        filterKelas.addEventListener('change', renderAdminTable);
+
+        function renderAdminTable() {
+            const mode = viewMode.value;
+            const targetClass = filterKelas.value;
+            let subtitleText = '';
+            
+            currentFilteredReports = allReports.filter(report => {
+                if (targetClass !== 'all' && report.kelas !== targetClass) return false;
+                return mode === 'harian' ? report.tanggal === filterDate.value : report.tanggal.startsWith(filterMonth.value);
+            });
+            
+            if (mode === 'harian') subtitleText = `Tgl: ${formatDateIndo(filterDate.value)}`;
+            else subtitleText = `Bulan: ${new Date(filterMonth.value.split('-')[0], filterMonth.value.split('-')[1] - 1).toLocaleString('id-ID', { month: 'long', year: 'numeric' })}`;
+            if (targetClass !== 'all') subtitleText += ` | Kelas: ${targetClass}`;
+            
+            document.getElementById('table-subtitle').innerText = subtitleText;
+            document.getElementById('total-count').innerText = currentFilteredReports.length;
+            
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+
+            if (currentFilteredReports.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-12 text-center text-gray-500 font-bold bg-gray-50/50">Tidak ada laporan sesuai filter.</td></tr>`;
+                return;
+            }
+
+            currentFilteredReports.forEach((report, index) => {
+                let timeStr = report.waktuInput && report.waktuInput.toDate ? report.waktuInput.toDate().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}) : '-';
+                const dateTimeHTML = mode === 'bulanan' 
+                    ? `<div class="font-black text-gray-900">${formatDateIndo(report.tanggal)}</div><div class="text-xs text-gray-500 font-medium">${timeStr}</div>`
+                    : `<span class="text-gray-500 font-medium">${timeStr}</span>`;
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-emerald-50/30 transition-colors";
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-gray-500 font-bold">${index + 1}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${dateTimeHTML}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <button onclick="window.showHistoryModal('${report.nisn}', '${report.nama.replace(/'/g, "\\'")}', '${report.kelas}')" class="font-black text-emerald-700 hover:underline text-left">
+                            ${report.nama}
+                        </button>
+                        <div class="text-xs text-gray-400 font-bold mt-0.5">NISN: ${report.nisn || '-'}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center text-xs">
+                        <span class="inline-flex px-2 py-1 rounded bg-gray-100 font-bold text-gray-700">${report.kelas}</span>
+                    </td>
+                    <td class="px-6 py-4 text-gray-600 max-w-[200px] truncate" title="${report.keluhan}">${report.keluhan}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        <button onclick="window.hapusData('${report.id}')" class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Hapus">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Form Submit
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if(!auth || !auth.currentUser) return;
+            if(!document.getElementById('nis').value) {
+                showToast("Pilih data siswa dengan benar!", "error");
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `Menyimpan...`;
+
+            try {
+                await addDoc(laporanCollection, {
+                    tanggal: inputTanggal.value,
+                    nama: selectNama.value,
+                    nis: document.getElementById('nis').value,
+                    nisn: document.getElementById('nisn').value,
+                    jk: document.getElementById('jk').value,
+                    kelas: document.getElementById('kelas').value,
+                    keluhan: document.getElementById('keluhan').value,
+                    waktuInput: serverTimestamp(),
+                    adminId: auth.currentUser.uid
+                });
+                
+                showToast("Data tersimpan di Cloud!");
+                
+                // Clear only specific fields
+                selectNama.value = '';
+                ['nis', 'nisn', 'jk', 'kelas'].forEach(id => document.getElementById(id).value = '');
+                document.getElementById('keluhan').value = '';
+                selectNama.focus();
+            } catch (error) {
+                showToast("Gagal menyimpan data", "error");
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" /></svg>Simpan Laporan`;
+            }
+        });
+
+        // Delete Logic
+        window.hapusData = async (docId) => {
+            if(!auth || !auth.currentUser) return;
+            const confirmBox = document.createElement('div');
+            confirmBox.className = "fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4";
+            confirmBox.innerHTML = `
+                <div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full animate-[slideUp_0.2s_ease-out] text-center border-t-8 border-red-500">
+                    <h3 class="text-xl font-black text-gray-900 mb-2">Hapus Laporan?</h3>
+                    <p class="text-gray-500 mb-6 font-medium text-sm">Tindakan ini tidak bisa dibatalkan.</p>
+                    <div class="flex gap-3">
+                        <button id="btn-batal" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl transition-colors">Batal</button>
+                        <button id="btn-hapus" class="flex-1 bg-red-500 text-white font-bold py-3 rounded-xl hover:bg-red-600 transition-colors">Ya, Hapus</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(confirmBox);
+
+            document.getElementById('btn-batal').onclick = () => confirmBox.remove();
+            document.getElementById('btn-hapus').onclick = async () => {
+                try {
+                    confirmBox.remove();
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'laporan_uks', docId));
+                    showToast("Data telah dihapus", "success");
+                } catch (error) { showToast("Gagal menghapus", "error"); }
+            };
+        };
+        
+        // Export CSV
+        window.exportToCSV = () => {
+            if(!isAdminLoggedIn) { showToast("Akses ditolak", "error"); return; }
+            if (currentFilteredReports.length === 0) { showToast("Tabel kosong", "error"); return; }
+
+            let csvContent = "No,Tanggal,Waktu,Nama Siswa,NIS,NISN,L/P,Kelas,Keluhan\n";
+            const escape = (str) => `"${String(str).replace(/"/g, '""')}"`;
+
+            currentFilteredReports.forEach((report, idx) => {
+                let time = report.waktuInput && report.waktuInput.toDate ? report.waktuInput.toDate().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}) : '';
+                csvContent += `${idx+1},${escape(report.tanggal)},${escape(time)},${escape(report.nama)},${escape(report.nis)},${escape(report.nisn)},${escape(report.jk)},${escape(report.kelas)},${escape(report.keluhan)}\n`;
+            });
+
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }));
+            link.download = `Laporan_UKS_${filterKelas.value}_${viewMode.value === 'harian' ? filterDate.value : filterMonth.value}.csv`;
+            link.click();
+        };
+
+        // History Modal
+        window.showHistoryModal = (nisn, nama, kelas) => {
+            document.getElementById('history-nama').innerText = nama;
+            document.getElementById('history-info').innerText = `NISN: ${nisn} | KELAS: ${kelas}`;
+            
+            const historyData = allReports.filter(r => r.nisn === nisn);
+            const tbody = document.getElementById('history-table-body');
+            tbody.innerHTML = '';
+            
+            if (historyData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="px-6 py-8 text-center text-gray-500 font-bold bg-gray-50">Belum ada riwayat tercatat.</td></tr>`;
+            } else {
+                historyData.forEach(r => {
+                    let time = r.waktuInput && r.waktuInput.toDate ? r.waktuInput.toDate().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}) : '-';
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-emerald-50/30";
+                    tr.innerHTML = `
+                        <td class="px-6 py-4 font-black text-gray-900">${formatDateIndo(r.tanggal)}</td>
+                        <td class="px-6 py-4 text-gray-500 font-bold">${time}</td>
+                        <td class="px-6 py-4 text-gray-700 whitespace-normal leading-relaxed">${r.keluhan}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+            document.getElementById('history-modal').classList.remove('hidden');
+        };
+        window.closeHistoryModal = () => document.getElementById('history-modal').classList.add('hidden');
+
+        initApp();
+    </script>
+</body>
+</html>
