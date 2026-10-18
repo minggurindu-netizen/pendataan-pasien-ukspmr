@@ -6,6 +6,10 @@
     <title>Sistem Pendataan UKS - SMP Islam Ar-Ridho</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f0fdf4; } /* Light green background */
         
@@ -257,12 +261,21 @@
                                     <option value="all">Semua Kelas</option>
                                 </select>
                             </div>
-                            <button id="btn-export" onclick="exportToCSV()" class="w-full sm:w-auto bg-gray-800 hover:bg-gray-900 text-white text-sm font-bold py-2.5 px-5 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                                Download Excel
-                            </button>
+                            
+                            <div class="flex gap-2 w-full sm:w-auto">
+                                <button id="btn-export-pdf" onclick="exportToPDF()" class="flex-1 sm:flex-none bg-red-600 hover:bg-red-700 text-white text-sm font-bold py-2.5 px-4 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                    </svg>
+                                    PDF
+                                </button>
+                                <button id="btn-export" onclick="exportToCSV()" class="flex-1 sm:flex-none bg-gray-800 hover:bg-gray-900 text-white text-sm font-bold py-2.5 px-4 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    Excel
+                                </button>
+                            </div>
                         </div>
                     </div>
                     
@@ -822,6 +835,64 @@
             link.href = URL.createObjectURL(new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }));
             link.download = `Laporan_UKS_${filterKelas.value}_${viewMode.value === 'harian' ? filterDate.value : filterMonth.value}.csv`;
             link.click();
+        };
+
+        window.exportToPDF = () => {
+            if(!isAdminLoggedIn) { showToast("Akses ditolak", "error"); return; }
+            if (currentFilteredReports.length === 0) { showToast("Tabel kosong, tidak ada yang bisa di-download", "error"); return; }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Judul Dokumen
+            doc.setFontSize(16);
+            doc.text("Laporan Kunjungan UKS", 14, 15);
+            doc.setFontSize(12);
+            doc.text("SMP Islam Ar-Ridho Citeureup", 14, 22);
+            
+            // Subjudul (Filter yang sedang aktif)
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            let subtitle = document.getElementById('table-subtitle').innerText;
+            doc.text(subtitle, 14, 28);
+
+            // Menyiapkan Data Tabel
+            const tableColumn = ["No", "Tanggal", "Waktu", "Nama Siswa", "Kelas", "Keluhan/Tindakan"];
+            const tableRows = [];
+
+            currentFilteredReports.forEach((report, idx) => {
+                let time = report.waktuInput && report.waktuInput.toDate ? report.waktuInput.toDate().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}) : '-';
+                const reportData = [
+                    idx + 1,
+                    formatDateIndo(report.tanggal),
+                    time,
+                    report.nama,
+                    report.kelas,
+                    report.keluhan
+                ];
+                tableRows.push(reportData);
+            });
+
+            // Render Tabel ke PDF
+            doc.autoTable({
+                head: [tableColumn],
+                body: tableRows,
+                startY: 34,
+                styles: { fontSize: 9, cellPadding: 3 },
+                headStyles: { fillColor: [4, 120, 87] }, // Warna Hijau Emerald
+                columnStyles: {
+                    0: { cellWidth: 10 },
+                    1: { cellWidth: 35 },
+                    2: { cellWidth: 20 },
+                    3: { cellWidth: 45 },
+                    4: { cellWidth: 15 },
+                    5: { cellWidth: 'auto' }
+                }
+            });
+
+            // Simpan File
+            const fileName = `Laporan_UKS_${filterKelas.value}_${viewMode.value === 'harian' ? filterDate.value : filterMonth.value}.pdf`;
+            doc.save(fileName);
         };
 
         // History Modal
